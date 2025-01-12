@@ -37,11 +37,14 @@
         const encodedM3u8Url = urlParams.get('m3u8_url');
         
         if (encodedM3u8Url) {
-            const m3u8Url = encodeURIComponent(encodedM3u8Url);
+            // Декодируем ссылку
+            const m3u8Url = decodeURIComponent(encodedM3u8Url);
             
+            // Убираем параметр m3u8_url из адресной строки
             const currentUrl = window.location.origin + window.location.pathname;
             window.history.replaceState({}, document.title, currentUrl);
 
+            // Инициализация плеера
             if (Hls.isSupported()) {
                 const video = document.getElementById('video');
                 const hls = new Hls();
@@ -51,6 +54,7 @@
                     video.play();
                 });
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                const video = document.getElementById('video');
                 video.src = m3u8Url;
                 video.addEventListener('loadedmetadata', function() {
                     video.play();
