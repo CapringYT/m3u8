@@ -37,37 +37,41 @@
         let m3u8Url = urlParams.get('m3u8_url');
 
         if (m3u8Url) {
-            // Проверяем, закодирована ли ссылка
-            const isEncoded = m3u8Url === encodeURIComponent(decodeURIComponent(m3u8Url));
-
-            if (!isEncoded) {
-                // Если ссылка не закодирована, кодируем её
-                const encodedUrl = encodeURIComponent(m3u8Url);
-
-                // Перезаписываем URL в адресной строке
-                const currentUrl = `${window.location.origin}${window.location.pathname}?m3u8_url=${encodedUrl}`;
-                window.history.replaceState({}, document.title, currentUrl);
-
-                // Используем закодированную ссылку для дальнейшей работы
-                m3u8Url = decodeURIComponent(encodedUrl);
-            } else {
-                // Если ссылка уже закодирована, декодируем её
-                m3u8Url = decodeURIComponent(m3u8Url);
+            // Проверяем, если ссылка содержит некорректные символы
+            try {
+                const decodedUrl = decodeURIComponent(m3u8Url); // Попытка декодирования
+                if (decodedUrl !== m3u8Url) {
+                    // Если различаются — перекодируем
+                    m3u8Url = encodeURIComponent(decodedUrl);
+                } else {
+                    // Кодируем, если ссылка не закодирована
+                    m3u8Url = encodeURIComponent(m3u8Url);
+                }
+            } catch (e) {
+                // Если декодирование не удалось, кодируем как есть
+                m3u8Url = encodeURIComponent(m3u8Url);
             }
+
+            // Перезаписываем URL в адресной строке с корректной закодированной ссылкой
+            const currentUrl = `${window.location.origin}${window.location.pathname}?m3u8_url=${m3u8Url}`;
+            window.history.replaceState({}, document.title, currentUrl);
+
+            // Декодируем обратно для использования
+            const decodedM3u8Url = decodeURIComponent(m3u8Url);
 
             // Инициализация плеера
             if (Hls.isSupported()) {
                 const video = document.getElementById('video');
                 const hls = new Hls();
-                hls.loadSource(m3u8Url);
+                hls.loadSource(decodedM3u8Url);
                 hls.attachMedia(video);
-                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                hls.on(Hls.Events.MANIFEST_PARSED, function () {
                     video.play();
                 });
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                 const video = document.getElementById('video');
-                video.src = m3u8Url;
-                video.addEventListener('loadedmetadata', function() {
+                video.src = decodedM3u8Url;
+                video.addEventListener('loadedmetadata', function () {
                     video.play();
                 });
             }
