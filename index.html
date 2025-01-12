@@ -34,15 +34,26 @@
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script>
         const urlParams = new URLSearchParams(window.location.search);
-        const encodedM3u8Url = urlParams.get('m3u8_url');
-        
-        if (encodedM3u8Url) {
-            // Декодируем ссылку
-            const m3u8Url = decodeURIComponent(encodedM3u8Url);
-            
-            // Убираем параметр m3u8_url из адресной строки
-            const currentUrl = window.location.origin + window.location.pathname;
-            window.history.replaceState({}, document.title, currentUrl);
+        let m3u8Url = urlParams.get('m3u8_url');
+
+        if (m3u8Url) {
+            // Проверяем, закодирована ли ссылка
+            const isEncoded = m3u8Url === encodeURIComponent(decodeURIComponent(m3u8Url));
+
+            if (!isEncoded) {
+                // Если ссылка не закодирована, кодируем её
+                const encodedUrl = encodeURIComponent(m3u8Url);
+
+                // Перезаписываем URL в адресной строке
+                const currentUrl = `${window.location.origin}${window.location.pathname}?m3u8_url=${encodedUrl}`;
+                window.history.replaceState({}, document.title, currentUrl);
+
+                // Используем закодированную ссылку для дальнейшей работы
+                m3u8Url = decodeURIComponent(encodedUrl);
+            } else {
+                // Если ссылка уже закодирована, декодируем её
+                m3u8Url = decodeURIComponent(m3u8Url);
+            }
 
             // Инициализация плеера
             if (Hls.isSupported()) {
