@@ -37,6 +37,9 @@
         const m3u8Url = urlParams.get('m3u8_url');
 
         if (m3u8Url) {
+            const currentUrl = window.location.origin + window.location.pathname;
+            window.history.replaceState({}, document.title, currentUrl);
+
             if (Hls.isSupported()) {
                 var video = document.getElementById('video');
                 var hls = new Hls();
