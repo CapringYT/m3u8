@@ -35,9 +35,11 @@
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const encodedM3u8Url = urlParams.get('m3u8_url');
+            const encodedUrl = encodeURIComponent(encodedM3u8Url);
+            console.log(encodedUrl);
 
-        if (encodedM3u8Url) {
-            const m3u8Url = decodeURIComponent(encodedM3u8Url);
+        if (encodedUrl) {
+            const m3u8Url = decodeURIComponent(encodedUrl);
             
             const currentUrl = window.location.origin + window.location.pathname;
             window.history.replaceState({}, document.title, currentUrl);
