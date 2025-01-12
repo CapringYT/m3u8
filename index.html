@@ -34,9 +34,11 @@
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script>
         const urlParams = new URLSearchParams(window.location.search);
-        const m3u8Url = urlParams.get('m3u8_url');
+        const encodedM3u8Url = urlParams.get('m3u8_url');
 
-        if (m3u8Url) {
+        if (encodedM3u8Url) {
+            const m3u8Url = decodeURIComponent(encodedM3u8Url);
+            
             const currentUrl = window.location.origin + window.location.pathname;
             window.history.replaceState({}, document.title, currentUrl);
 
