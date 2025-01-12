@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Плеер M3U8</title>
+    <style>
+        body {
+            background-color: #121212; /* Тёмный фон страницы */
+            color: #ffffff; /* Цвет текста */
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        /* Стили для видеоэлемента */
+        video {
+            background-color: #000; /* Чёрный фон для видеоплеера */
+            width: 100%;
+            max-width: 720px;
+            height: auto;
+            border: 2px solid #333; /* Граница для плеера */
+            border-radius: 10px; /* Скруглённые углы */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Видеоэлемент для воспроизведения -->
+    <video id="video" width="640" height="360" controls></video>
+
+    <script src="/m3u8/hls.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search); // Получаем параметры из URL
+        const m3u8Url = urlParams.get('m3u8_url'); // Извлекаем параметр m3u8_url
+
+        if (m3u8Url) {
+            if (Hls.isSupported()) {
+                var video = document.getElementById('video');
+                var hls = new Hls();
+                hls.loadSource(m3u8Url);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    video.play();
+                });
+            }
+            // Поддержка в Safari (у которого встроенная поддержка HLS)
+            else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = m3u8Url;
+                video.addEventListener('loadedmetadata', function() {
+                    video.play();
+                });
+            }
+        } else {
+            alert('Ошибка: ссылка на M3U8 не указана.');
+        }
+    </script>
+</body>
+</html>
