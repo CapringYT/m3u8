@@ -90,7 +90,7 @@
 </head>
 <body>
     <div id="player-container">
-        <video id="video"></video>
+        <video id="video" muted></video>
         <button id="play-pause">
             <img src="https://raw.githubusercontent.com/CapringYT/m3u8/refs/heads/main/play.png" alt="Play">
         </button>
@@ -117,6 +117,8 @@
         const playPauseImg = playPauseBtn.querySelector('img');
         const timeDisplay = document.getElementById('time');
         let audioTrack = null; // Аудиотрек
+        let audioReady = false;
+        let videoReady = false;
 
         // Форматирование времени
         function formatTime(seconds) {
@@ -125,68 +127,84 @@
             return `${mins}:${secs}`;
         }
 
-        // Инициализация видео
-        if (m3u8VideoUrl) {
-            if (Hls.isSupported()) {
-                const hls = new Hls();
-                hls.loadSource(m3u8VideoUrl);
-                hls.attachMedia(video);
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = m3u8VideoUrl;
-            }
-        } else {
-            alert('Ошибка: ссылка на M3U8 видео не указана.');
-        }
-
-        // Инициализация аудио
-        if (m3u8AudioUrl) {
-            audioTrack = new Audio(m3u8AudioUrl);
-            audioTrack.crossOrigin = "anonymous";
-            audioTrack.autoplay = false;
-
-            // Синхронизация воспроизведения
-            video.addEventListener('play', () => {
-                audioTrack.currentTime = video.currentTime;
-                const ensureAudio = setInterval(() => {
-                    if (audioTrack.paused) {
-                        audioTrack.play();
-                    } else {
-                        clearInterval(ensureAudio);
-                    }
-                }, 100);
-            });
-
-            video.addEventListener('pause', () => {
-                audioTrack.pause();
-            });
-
-            video.addEventListener('seeked', () => {
-                audioTrack.currentTime = video.currentTime;
-            });
-
-            video.addEventListener('timeupdate', () => {
-                if (Math.abs(audioTrack.currentTime - video.currentTime) > 0.2) {
-                    audioTrack.currentTime = video.currentTime;
+        // Загрузка аудио
+        function loadAudio() {
+            return new Promise((resolve, reject) => {
+                if (m3u8AudioUrl) {
+                    audioTrack = new Audio(m3u8AudioUrl);
+                    audioTrack.crossOrigin = "anonymous";
+                    audioTrack.addEventListener('loadedmetadata', () => {
+                        audioReady = true;
+                        resolve();
+                    });
+                    audioTrack.addEventListener('error', reject);
+                } else {
+                    resolve();
                 }
             });
         }
+
+        // Загрузка видео
+        function loadVideo() {
+            return new Promise((resolve, reject) => {
+                if (m3u8VideoUrl) {
+                    if (Hls.isSupported()) {
+                        const hls = new Hls();
+                        hls.loadSource(m3u8VideoUrl);
+                        hls.attachMedia(video);
+                        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                            videoReady = true;
+                            resolve();
+                        });
+                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                        video.src = m3u8VideoUrl;
+                        video.addEventListener('loadedmetadata', () => {
+                            videoReady = true;
+                            resolve();
+                        });
+                    }
+                } else {
+                    reject(new Error('Ошибка: ссылка на M3U8 видео не указана.'));
+                }
+            });
+        }
+
+        // Инициализация
+        Promise.all([loadAudio(), loadVideo()])
+            .then(() => {
+                video.muted = false;
+                console.log('Аудио и видео загружены.');
+            })
+            .catch(err => {
+                console.error('Ошибка загрузки:', err);
+            });
 
         // Управление Play/Pause
         playPauseBtn.addEventListener('click', () => {
             if (video.paused) {
                 video.play();
+                if (audioTrack && audioReady) {
+                    audioTrack.currentTime = video.currentTime;
+                    audioTrack.play();
+                }
                 playPauseImg.src = 'https://raw.githubusercontent.com/CapringYT/m3u8/refs/heads/main/pause.png';
             } else {
                 video.pause();
+                if (audioTrack) {
+                    audioTrack.pause();
+                }
                 playPauseImg.src = 'https://raw.githubusercontent.com/CapringYT/m3u8/refs/heads/main/play.png';
             }
         });
 
-        // Обновление прогресса
+        // Синхронизация времени
         video.addEventListener('timeupdate', () => {
             const progressPercent = (video.currentTime / video.duration) * 100;
             progress.style.width = `${progressPercent}%`;
             timeDisplay.textContent = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
+            if (audioTrack && Math.abs(audioTrack.currentTime - video.currentTime) > 0.2) {
+                audioTrack.currentTime = video.currentTime;
+            }
         });
 
         // Перемотка по клику
