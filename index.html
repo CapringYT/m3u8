@@ -90,7 +90,7 @@
 </head>
 <body>
     <div id="player-container">
-        <video id="video" muted></video>
+        <video id="video"></video>
         <button id="play-pause">
             <img src="https://raw.githubusercontent.com/CapringYT/m3u8/refs/heads/main/play.png" alt="Play">
         </button>
@@ -106,8 +106,7 @@
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script>
         const urlParams = new URLSearchParams(window.location.search);
-        const m3u8VideoUrl = urlParams.get('m3u8_video');
-        const m3u8AudioUrl = urlParams.get('m3u8_audio');
+        const m3u8Url = urlParams.get('m3u8_url');
 
         const video = document.getElementById('video');
         const playPauseBtn = document.getElementById('play-pause');
@@ -116,110 +115,57 @@
         const fullscreenBtn = document.getElementById('fullscreen');
         const playPauseImg = playPauseBtn.querySelector('img');
         const timeDisplay = document.getElementById('time');
-        let audioTrack = null; // Аудиотрек
-        let audioReady = false;
-        let videoReady = false;
 
-        // Форматирование времени
         function formatTime(seconds) {
             const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
             const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
             return `${mins}:${secs}`;
         }
 
-        // Загрузка аудио
-        function loadAudio() {
-            return new Promise((resolve, reject) => {
-                if (m3u8AudioUrl) {
-                    audioTrack = new Audio(m3u8AudioUrl);
-                    audioTrack.crossOrigin = "anonymous";
-                    audioTrack.addEventListener('loadedmetadata', () => {
-                        audioReady = true;
-                        resolve();
-                    });
-                    audioTrack.addEventListener('error', reject);
-                } else {
-                    resolve();
-                }
-            });
+        if (m3u8Url) {
+            const currentUrl = window.location.origin + window.location.pathname;
+            window.history.replaceState({}, document.title, currentUrl);
+
+            if (Hls.isSupported()) {
+                const hls = new Hls();
+                hls.loadSource(m3u8Url);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    timeDisplay.textContent = `00:00 / ${formatTime(video.duration || 0)}`;
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = m3u8Url;
+                video.addEventListener('loadedmetadata', () => {
+                    timeDisplay.textContent = `00:00 / ${formatTime(video.duration || 0)}`;
+                });
+            }
+        } else {
+            alert('Ошибка: ссылка на M3U8 не указана.');
         }
 
-        // Загрузка видео
-        function loadVideo() {
-            return new Promise((resolve, reject) => {
-                if (m3u8VideoUrl) {
-                    if (Hls.isSupported()) {
-                        const hls = new Hls();
-                        hls.loadSource(m3u8VideoUrl);
-                        hls.attachMedia(video);
-                        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                            videoReady = true;
-                            resolve();
-                        });
-                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                        video.src = m3u8VideoUrl;
-                        video.addEventListener('loadedmetadata', () => {
-                            videoReady = true;
-                            resolve();
-                        });
-                    }
-                } else {
-                    reject(new Error('Ошибка: ссылка на M3U8 видео не указана.'));
-                }
-            });
-        }
-
-        // Инициализация
-        Promise.all([loadAudio(), loadVideo()])
-            .then(() => {
-                video.muted = false;
-                console.log('Аудио и видео загружены.');
-            })
-            .catch(err => {
-                console.error('Ошибка загрузки:', err);
-            });
-
-        // Управление Play/Pause
         playPauseBtn.addEventListener('click', () => {
             if (video.paused) {
                 video.play();
-                if (audioTrack && audioReady) {
-                    audioTrack.currentTime = video.currentTime;
-                    audioTrack.play();
-                }
                 playPauseImg.src = 'https://raw.githubusercontent.com/CapringYT/m3u8/refs/heads/main/pause.png';
             } else {
                 video.pause();
-                if (audioTrack) {
-                    audioTrack.pause();
-                }
                 playPauseImg.src = 'https://raw.githubusercontent.com/CapringYT/m3u8/refs/heads/main/play.png';
             }
         });
 
-        // Синхронизация времени
         video.addEventListener('timeupdate', () => {
             const progressPercent = (video.currentTime / video.duration) * 100;
             progress.style.width = `${progressPercent}%`;
             timeDisplay.textContent = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
-            if (audioTrack && Math.abs(audioTrack.currentTime - video.currentTime) > 0.2) {
-                audioTrack.currentTime = video.currentTime;
-            }
         });
 
-        // Перемотка по клику
         progressContainer.addEventListener('click', (e) => {
             const width = progressContainer.offsetWidth;
             const clickX = e.offsetX;
             const duration = video.duration;
             video.currentTime = (clickX / width) * duration;
-
-            if (audioTrack) {
-                audioTrack.currentTime = video.currentTime;
-            }
         });
 
-        // Полноэкранный режим
         fullscreenBtn.addEventListener('click', () => {
             if (!document.fullscreenElement) {
                 video.requestFullscreen();
