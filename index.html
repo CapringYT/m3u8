@@ -116,6 +116,7 @@
         const fullscreenBtn = document.getElementById('fullscreen');
         const playPauseImg = playPauseBtn.querySelector('img');
         const timeDisplay = document.getElementById('time');
+        let audioTrack = null;
 
         function formatTime(seconds) {
             const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -128,31 +129,31 @@
                 const hls = new Hls();
                 hls.loadSource(m3u8VideoUrl);
                 hls.attachMedia(video);
-
-                if (m3u8AudioUrl) {
-                    video.muted = true; // Выключаем встроенный звук видео
-                    hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                        const audioTrack = new Audio(m3u8AudioUrl);
-                        audioTrack.crossOrigin = "anonymous";
-                        audioTrack.autoplay = true;
-
-                        video.addEventListener('play', () => audioTrack.play());
-                        video.addEventListener('pause', () => audioTrack.pause());
-                        video.addEventListener('seeked', () => {
-                            audioTrack.currentTime = video.currentTime;
-                        });
-                        video.addEventListener('timeupdate', () => {
-                            if (Math.abs(audioTrack.currentTime - video.currentTime) > 0.2) {
-                                audioTrack.currentTime = video.currentTime;
-                            }
-                        });
-                    });
-                }
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                 video.src = m3u8VideoUrl;
             }
         } else {
             alert('Ошибка: ссылка на M3U8 видео не указана.');
+        }
+
+        if (m3u8AudioUrl) {
+            audioTrack = new Audio(m3u8AudioUrl);
+            audioTrack.crossOrigin = "anonymous";
+            audioTrack.autoplay = false;
+            audioTrack.addEventListener('canplay', () => {
+                audioTrack.play();
+            });
+
+            video.addEventListener('play', () => audioTrack.play());
+            video.addEventListener('pause', () => audioTrack.pause());
+            video.addEventListener('seeked', () => {
+                audioTrack.currentTime = video.currentTime;
+            });
+            video.addEventListener('timeupdate', () => {
+                if (Math.abs(audioTrack.currentTime - video.currentTime) > 0.2) {
+                    audioTrack.currentTime = video.currentTime;
+                }
+            });
         }
 
         playPauseBtn.addEventListener('click', () => {
@@ -176,6 +177,10 @@
             const clickX = e.offsetX;
             const duration = video.duration;
             video.currentTime = (clickX / width) * duration;
+
+            if (audioTrack) {
+                audioTrack.currentTime = video.currentTime;
+            }
         });
 
         fullscreenBtn.addEventListener('click', () => {
