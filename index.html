@@ -73,6 +73,18 @@
             border-radius: 5px;
         }
 
+        #thumb {
+            position: absolute;
+            top: -5px;
+            width: 15px;
+            height: 15px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
+
         #time {
             color: #fff;
             font-size: 14px;
@@ -86,17 +98,36 @@
             font-size: 20px;
             cursor: pointer;
         }
+
+        #double-tap-area {
+            position: absolute;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        #double-tap-left {
+            left: 0;
+        }
+
+        #double-tap-right {
+            right: 0;
+        }
     </style>
 </head>
 <body>
     <div id="player-container">
         <video id="video"></video>
+        <div id="double-tap-left" class="double-tap-area"></div>
+        <div id="double-tap-right" class="double-tap-area"></div>
         <button id="play-pause">
             <img src="https://raw.githubusercontent.com/CapringYT/m3u8/refs/heads/main/play.png" alt="Play">
         </button>
         <div id="controls">
             <div id="progress-container">
                 <div id="progress"></div>
+                <div id="thumb"></div>
             </div>
             <div id="time">00:00 / 00:00</div>
             <button id="fullscreen">⛶</button>
@@ -105,16 +136,16 @@
 
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const m3u8Url = urlParams.get('m3u8_url');
-
         const video = document.getElementById('video');
         const playPauseBtn = document.getElementById('play-pause');
         const progressContainer = document.getElementById('progress-container');
         const progress = document.getElementById('progress');
+        const thumb = document.getElementById('thumb');
+        const timeDisplay = document.getElementById('time');
         const fullscreenBtn = document.getElementById('fullscreen');
         const playPauseImg = playPauseBtn.querySelector('img');
-        const timeDisplay = document.getElementById('time');
+        const doubleTapLeft = document.getElementById('double-tap-left');
+        const doubleTapRight = document.getElementById('double-tap-right');
 
         function formatTime(seconds) {
             const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -122,25 +153,16 @@
             return `${mins}:${secs}`;
         }
 
-        if (m3u8Url) {
-            const currentUrl = window.location.origin + window.location.pathname;
-            window.history.replaceState({}, document.title, currentUrl);
+        const urlParams = new URLSearchParams(window.location.search);
+        const m3u8Url = urlParams.get('m3u8_url');
 
-            if (Hls.isSupported()) {
-                const hls = new Hls();
-                hls.loadSource(m3u8Url);
-                hls.attachMedia(video);
-                hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    timeDisplay.textContent = `00:00 / ${formatTime(video.duration || 0)}`;
-                });
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = m3u8Url;
-                video.addEventListener('loadedmetadata', () => {
-                    timeDisplay.textContent = `00:00 / ${formatTime(video.duration || 0)}`;
-                });
-            }
-        } else {
-            alert('Ошибка: ссылка на M3U8 не указана.');
+        if (m3u8Url) {
+            const hls = new Hls();
+            hls.loadSource(m3u8Url);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                timeDisplay.textContent = `00:00 / ${formatTime(video.duration || 0)}`;
+            });
         }
 
         playPauseBtn.addEventListener('click', () => {
@@ -154,24 +176,41 @@
         });
 
         video.addEventListener('timeupdate', () => {
-            const progressPercent = (video.currentTime / video.duration) * 100;
-            progress.style.width = `${progressPercent}%`;
+            const percent = (video.currentTime / video.duration) * 100;
+            progress.style.width = `${percent}%`;
+            thumb.style.left = `${percent}%`;
+            thumb.style.display = 'block';
             timeDisplay.textContent = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
         });
+        progressContainer.addEventListener('mousedown', (e) => {
+            const onMove = (event) => {
+                const rect = progressContainer.getBoundingClientRect();
+                const pos = Math.min(Math.max(0, event.clientX - rect.left), rect.width);
+                const percent = pos / rect.width;
+                video.currentTime = percent * video.duration;
+            };
+            onMove(e);
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', () => {
+                document.removeEventListener('mousemove', onMove);
+            });
+        });
+        doubleTapLeft.addEventListener('dblclick', () => {
+            video.currentTime = Math.max(0, video.currentTime - 10);
+        });
 
-        progressContainer.addEventListener('click', (e) => {
-            const width = progressContainer.offsetWidth;
-            const clickX = e.offsetX;
-            const duration = video.duration;
-            video.currentTime = (clickX / width) * duration;
+        doubleTapRight.addEventListener('dblclick', () => {
+            video.currentTime = Math.min(video.duration, video.currentTime + 10);
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') video.currentTime = Math.max(0, video.currentTime - 10);
+            if (e.key === 'ArrowRight') video.currentTime = Math.min(video.duration, video.currentTime + 10);
         });
 
         fullscreenBtn.addEventListener('click', () => {
-            if (!document.fullscreenElement) {
-                video.requestFullscreen();
-            } else {
-                document.exitFullscreen();
-            }
+            if (!document.fullscreenElement) video.requestFullscreen();
+            else document.exitFullscreen();
         });
     </script>
 </body>
