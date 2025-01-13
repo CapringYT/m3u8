@@ -116,14 +116,16 @@
         const fullscreenBtn = document.getElementById('fullscreen');
         const playPauseImg = playPauseBtn.querySelector('img');
         const timeDisplay = document.getElementById('time');
-        let audioTrack = null;
+        let audioTrack = null; // Аудиотрек
 
+        // Форматирование времени
         function formatTime(seconds) {
             const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
             const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
             return `${mins}:${secs}`;
         }
 
+        // Инициализация видео
         if (m3u8VideoUrl) {
             if (Hls.isSupported()) {
                 const hls = new Hls();
@@ -136,19 +138,32 @@
             alert('Ошибка: ссылка на M3U8 видео не указана.');
         }
 
+        // Инициализация аудио
         if (m3u8AudioUrl) {
             audioTrack = new Audio(m3u8AudioUrl);
             audioTrack.crossOrigin = "anonymous";
             audioTrack.autoplay = false;
-            audioTrack.addEventListener('canplay', () => {
-                audioTrack.play();
+
+            // Синхронизация воспроизведения
+            video.addEventListener('play', () => {
+                audioTrack.currentTime = video.currentTime;
+                const ensureAudio = setInterval(() => {
+                    if (audioTrack.paused) {
+                        audioTrack.play();
+                    } else {
+                        clearInterval(ensureAudio);
+                    }
+                }, 100);
             });
 
-            video.addEventListener('play', () => audioTrack.play());
-            video.addEventListener('pause', () => audioTrack.pause());
+            video.addEventListener('pause', () => {
+                audioTrack.pause();
+            });
+
             video.addEventListener('seeked', () => {
                 audioTrack.currentTime = video.currentTime;
             });
+
             video.addEventListener('timeupdate', () => {
                 if (Math.abs(audioTrack.currentTime - video.currentTime) > 0.2) {
                     audioTrack.currentTime = video.currentTime;
@@ -156,6 +171,7 @@
             });
         }
 
+        // Управление Play/Pause
         playPauseBtn.addEventListener('click', () => {
             if (video.paused) {
                 video.play();
@@ -166,12 +182,14 @@
             }
         });
 
+        // Обновление прогресса
         video.addEventListener('timeupdate', () => {
             const progressPercent = (video.currentTime / video.duration) * 100;
             progress.style.width = `${progressPercent}%`;
             timeDisplay.textContent = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
         });
 
+        // Перемотка по клику
         progressContainer.addEventListener('click', (e) => {
             const width = progressContainer.offsetWidth;
             const clickX = e.offsetX;
@@ -183,6 +201,7 @@
             }
         });
 
+        // Полноэкранный режим
         fullscreenBtn.addEventListener('click', () => {
             if (!document.fullscreenElement) {
                 video.requestFullscreen();
