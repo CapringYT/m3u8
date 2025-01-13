@@ -18,6 +18,7 @@
             width: 100%;
             max-width: 720px;
             margin: 0 auto;
+            overflow: hidden;
         }
 
         #video {
@@ -26,6 +27,11 @@
             height: auto;
             border: 2px solid #333;
             border-radius: 10px;
+        }
+
+        #controls,
+        #play-pause {
+            transition: opacity 0.3s ease;
         }
 
         #controls {
@@ -39,6 +45,7 @@
             background: rgba(0, 0, 0, 0.7);
             padding: 10px;
             border-radius: 10px;
+            opacity: 1; /* Контролы видны по умолчанию */
         }
 
         #play-pause {
@@ -110,16 +117,38 @@
 
         const video = document.getElementById('video');
         const playPauseBtn = document.getElementById('play-pause');
+        const controls = document.getElementById('controls');
         const progressContainer = document.getElementById('progress-container');
         const progress = document.getElementById('progress');
         const fullscreenBtn = document.getElementById('fullscreen');
         const playPauseImg = playPauseBtn.querySelector('img');
         const timeDisplay = document.getElementById('time');
 
+        let controlsTimeout;
+
         function formatTime(seconds) {
             const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
             const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
             return `${mins}:${secs}`;
+        }
+
+        function showControls() {
+            controls.style.opacity = 1;
+            playPauseBtn.style.opacity = 1;
+            if (controlsTimeout) clearTimeout(controlsTimeout);
+            controlsTimeout = setTimeout(() => {
+                if (!video.paused) {
+                    controls.style.opacity = 0;
+                    playPauseBtn.style.opacity = 0;
+                }
+            }, 3000);
+        }
+
+        function hideControls() {
+            if (!video.paused) {
+                controls.style.opacity = 0;
+                playPauseBtn.style.opacity = 0;
+            }
         }
 
         if (m3u8Url) {
@@ -147,9 +176,11 @@
             if (video.paused) {
                 video.play();
                 playPauseImg.src = 'https://raw.githubusercontent.com/CapringYT/m3u8/refs/heads/main/pause.png';
+                hideControls();
             } else {
                 video.pause();
                 playPauseImg.src = 'https://raw.githubusercontent.com/CapringYT/m3u8/refs/heads/main/play.png';
+                showControls();
             }
         });
 
@@ -173,6 +204,10 @@
                 document.exitFullscreen();
             }
         });
+
+        video.addEventListener('mousemove', showControls);
+        video.addEventListener('mouseleave', hideControls);
+        document.addEventListener('visibilitychange', showControls);
     </script>
 </body>
 </html>
