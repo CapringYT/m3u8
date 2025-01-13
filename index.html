@@ -130,12 +130,11 @@
                 hls.attachMedia(video);
 
                 if (m3u8AudioUrl) {
+                    video.muted = true; // Выключаем встроенный звук видео
                     hls.on(Hls.Events.MANIFEST_PARSED, () => {
                         const audioTrack = new Audio(m3u8AudioUrl);
                         audioTrack.crossOrigin = "anonymous";
                         audioTrack.autoplay = true;
-                        audioTrack.loop = false;
-                        audioTrack.volume = 1;
 
                         video.addEventListener('play', () => audioTrack.play());
                         video.addEventListener('pause', () => audioTrack.pause());
