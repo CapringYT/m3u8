@@ -106,7 +106,8 @@
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script>
         const urlParams = new URLSearchParams(window.location.search);
-        const m3u8Url = urlParams.get('m3u8_url');
+        const m3u8VideoUrl = urlParams.get('m3u8_video');
+        const m3u8AudioUrl = urlParams.get('m3u8_audio');
 
         const video = document.getElementById('video');
         const playPauseBtn = document.getElementById('play-pause');
@@ -122,25 +123,37 @@
             return `${mins}:${secs}`;
         }
 
-        if (m3u8Url) {
-            const currentUrl = window.location.origin + window.location.pathname;
-            window.history.replaceState({}, document.title, currentUrl);
-
+        if (m3u8VideoUrl) {
             if (Hls.isSupported()) {
                 const hls = new Hls();
-                hls.loadSource(m3u8Url);
+                hls.loadSource(m3u8VideoUrl);
                 hls.attachMedia(video);
-                hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    timeDisplay.textContent = `00:00 / ${formatTime(video.duration || 0)}`;
-                });
+
+                if (m3u8AudioUrl) {
+                    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                        const audioTrack = new Audio(m3u8AudioUrl);
+                        audioTrack.crossOrigin = "anonymous";
+                        audioTrack.autoplay = true;
+                        audioTrack.loop = false;
+                        audioTrack.volume = 1;
+
+                        video.addEventListener('play', () => audioTrack.play());
+                        video.addEventListener('pause', () => audioTrack.pause());
+                        video.addEventListener('seeked', () => {
+                            audioTrack.currentTime = video.currentTime;
+                        });
+                        video.addEventListener('timeupdate', () => {
+                            if (Math.abs(audioTrack.currentTime - video.currentTime) > 0.2) {
+                                audioTrack.currentTime = video.currentTime;
+                            }
+                        });
+                    });
+                }
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = m3u8Url;
-                video.addEventListener('loadedmetadata', () => {
-                    timeDisplay.textContent = `00:00 / ${formatTime(video.duration || 0)}`;
-                });
+                video.src = m3u8VideoUrl;
             }
         } else {
-            alert('Ошибка: ссылка на M3U8 не указана.');
+            alert('Ошибка: ссылка на M3U8 видео не указана.');
         }
 
         playPauseBtn.addEventListener('click', () => {
