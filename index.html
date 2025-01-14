@@ -28,10 +28,9 @@
         }
 
         audio {
-            height: 40px; /* Задаём высоту для аудио */
+            height: 40px;
         }
 
-        /* Скрытие интерфейсов по умолчанию */
         #audio-container {
             display: none;
         }
@@ -62,7 +61,6 @@
         const video = document.getElementById('video');
         const audio = document.getElementById('audio');
 
-        // Если указан параметр для видео
         if (m3u8VideoUrl) {
             videoContainer.style.display = 'block';  // Показать видео
             if (Hls.isSupported()) {
@@ -74,7 +72,6 @@
             }
         }
 
-        // Если указан параметр для аудио
         if (m3u8AudioUrl) {
             audioContainer.style.display = 'block';  // Показать аудио
             const hlsAudio = new Hls();
@@ -82,7 +79,6 @@
             hlsAudio.attachMedia(audio);
         }
 
-        // Если не указаны оба параметра
         if (!m3u8VideoUrl && !m3u8AudioUrl) {
             alert('Ошибка: ссылки на M3U8 не указаны.');
         }
