@@ -30,12 +30,25 @@
         audio {
             height: 40px; /* Задаём высоту для аудио */
         }
+
+        /* Скрытие интерфейсов по умолчанию */
+        #audio-container {
+            display: none;
+        }
+
+        #video-container {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div id="player-container">
-        <video id="video" controls></video>
-        <audio id="audio" controls></audio>
+        <div id="video-container">
+            <video id="video" controls></video>
+        </div>
+        <div id="audio-container">
+            <audio id="audio" controls></audio>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
@@ -44,13 +57,14 @@
         const m3u8VideoUrl = urlParams.get('m3u8_video');
         const m3u8AudioUrl = urlParams.get('m3u8_audio');
 
+        const videoContainer = document.getElementById('video-container');
+        const audioContainer = document.getElementById('audio-container');
         const video = document.getElementById('video');
         const audio = document.getElementById('audio');
 
+        // Если указан параметр для видео
         if (m3u8VideoUrl) {
-            const currentUrl = window.location.origin + window.location.pathname;
-            window.history.replaceState({}, document.title, currentUrl);
-
+            videoContainer.style.display = 'block';  // Показать видео
             if (Hls.isSupported()) {
                 const hls = new Hls();
                 hls.loadSource(m3u8VideoUrl);
@@ -60,12 +74,15 @@
             }
         }
 
+        // Если указан параметр для аудио
         if (m3u8AudioUrl) {
+            audioContainer.style.display = 'block';  // Показать аудио
             const hlsAudio = new Hls();
             hlsAudio.loadSource(m3u8AudioUrl);
             hlsAudio.attachMedia(audio);
         }
 
+        // Если не указаны оба параметра
         if (!m3u8VideoUrl && !m3u8AudioUrl) {
             alert('Ошибка: ссылки на M3U8 не указаны.');
         }
