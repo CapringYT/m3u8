@@ -79,9 +79,11 @@
             hlsAudio.attachMedia(audio);
         }
 
+        history.replaceState({}, document.title, window.location.pathname);
+
         if (!m3u8VideoUrl && !m3u8AudioUrl) {
             alert('Ошибка: ссылки на M3U8 не указаны.');
         }
     </script>
 </body>
-  </html>
+</html>
