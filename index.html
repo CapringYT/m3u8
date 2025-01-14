@@ -19,39 +19,55 @@
             margin: 0 auto;
         }
 
-        video {
+        video, audio {
             background-color: #000;
             width: 100%;
             height: auto;
             border: 2px solid #333;
             border-radius: 10px;
         }
+
+        audio {
+            height: 40px; /* Задаём высоту для аудио */
+        }
     </style>
 </head>
 <body>
     <div id="player-container">
         <video id="video" controls></video>
+        <audio id="audio" controls></audio>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script>
         const urlParams = new URLSearchParams(window.location.search);
-        const m3u8Url = urlParams.get('m3u8_url');
-        const video = document.getElementById('video');
+        const m3u8VideoUrl = urlParams.get('m3u8_video');
+        const m3u8AudioUrl = urlParams.get('m3u8_audio');
 
-        if (m3u8Url) {
+        const video = document.getElementById('video');
+        const audio = document.getElementById('audio');
+
+        if (m3u8VideoUrl) {
             const currentUrl = window.location.origin + window.location.pathname;
             window.history.replaceState({}, document.title, currentUrl);
 
             if (Hls.isSupported()) {
                 const hls = new Hls();
-                hls.loadSource(m3u8Url);
+                hls.loadSource(m3u8VideoUrl);
                 hls.attachMedia(video);
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = m3u8Url;
+                video.src = m3u8VideoUrl;
             }
-        } else {
-            alert('Ошибка: ссылка на M3U8 не указана в параметре "m3u8_url". \nПример:\nhttps://capringyt.github.io/m3u8/?m3u8_url=https://cdn.example.com/index.m3u8');
+        }
+
+        if (m3u8AudioUrl) {
+            const hlsAudio = new Hls();
+            hlsAudio.loadSource(m3u8AudioUrl);
+            hlsAudio.attachMedia(audio);
+        }
+
+        if (!m3u8VideoUrl && !m3u8AudioUrl) {
+            alert('Ошибка: ссылки на M3U8 не указаны.');
         }
     </script>
 </body>
