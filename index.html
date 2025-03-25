@@ -64,21 +64,27 @@
         const video = document.getElementById('video');
         const audio = document.getElementById('audio');
 
+        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+
+        function getProxyUrl(url) {
+            return proxyUrl + url;
+        }
+
         if (m3u8VideoUrl) {
             videoContainer.style.display = 'block';  // Показать видео
             if (Hls.isSupported()) {
                 const hls = new Hls();
-                hls.loadSource(m3u8VideoUrl);
+                hls.loadSource(getProxyUrl(m3u8VideoUrl));
                 hls.attachMedia(video);
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = m3u8VideoUrl;
+                video.src = getProxyUrl(m3u8VideoUrl);
             }
         }
 
         if (m3u8AudioUrl) {
-            audioContainer.style.display = 'block';  // Показать аудио
+            audioContainer.style.display = 'block';
             const hlsAudio = new Hls();
-            hlsAudio.loadSource(m3u8AudioUrl);
+            hlsAudio.loadSource(getProxyUrl(m3u8AudioUrl));
             hlsAudio.attachMedia(audio);
         }
 
