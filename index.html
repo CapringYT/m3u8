@@ -83,6 +83,7 @@
         }
 
         history.replaceState({}, document.title, window.location.pathname + '?v=' + new Date().getTime());
+        history.replaceState({}, document.title, window.location.pathname + '?m3u8_video=');
 
         if (!m3u8VideoUrl && !m3u8AudioUrl) {
             alert('Ошибка: ссылки на M3U8 не указаны.');
