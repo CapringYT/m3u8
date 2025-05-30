@@ -58,11 +58,32 @@
         const urlParams = new URLSearchParams(window.location.search);
         const m3u8VideoUrl = urlParams.get('m3u8_video');
         const m3u8AudioUrl = urlParams.get('m3u8_audio');
+        const timeParam = urlParams.get('t');
 
         const videoContainer = document.getElementById('video-container');
         const audioContainer = document.getElementById('audio-container');
         const video = document.getElementById('video');
         const audio = document.getElementById('audio');
+
+        function parseTimeToSeconds(timeStr) {
+            if (!timeStr) return 0;
+            
+            const hoursMatch = timeStr.match(/(\d+)h/);
+            const minutesMatch = timeStr.match(/(\d+)m/);
+            const secondsMatch = timeStr.match(/(\d+)s/);
+            
+            const hours = hoursMatch ? parseInt(hoursMatch[1]) : 0;
+            const minutes = minutesMatch ? parseInt(minutesMatch[1]) : 0;
+            const seconds = secondsMatch ? parseInt(secondsMatch[1]) : 0;
+            
+            return hours * 3600 + minutes * 60 + seconds;
+        }
+
+        function setStartTime(mediaElement, timeInSeconds) {
+            if (timeInSeconds > 0) {
+                mediaElement.currentTime = timeInSeconds;
+            }
+        }
 
         if (m3u8VideoUrl) {
             videoContainer.style.display = 'block';
@@ -70,8 +91,16 @@
                 const hls = new Hls();
                 hls.loadSource(m3u8VideoUrl);
                 hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    const startTime = parseTimeToSeconds(timeParam);
+                    setStartTime(video, startTime);
+                });
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                 video.src = m3u8VideoUrl;
+                video.addEventListener('loadedmetadata', function() {
+                    const startTime = parseTimeToSeconds(timeParam);
+                    setStartTime(video, startTime);
+                });
             }
         }
 
@@ -80,6 +109,10 @@
             const hlsAudio = new Hls();
             hlsAudio.loadSource(m3u8AudioUrl);
             hlsAudio.attachMedia(audio);
+            hlsAudio.on(Hls.Events.MANIFEST_PARSED, function() {
+                const startTime = parseTimeToSeconds(timeParam);
+                setStartTime(audio, startTime);
+            });
         }
 
         history.replaceState({}, document.title, window.location.pathname + '?v=' + new Date().getTime());
